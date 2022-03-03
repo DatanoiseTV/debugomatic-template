@@ -24,6 +24,8 @@ add_compile_definitions(PICO_FLASH_SIZE_BYTES=16777216)
 
 add_executable(debugomatic debugomatic.c )
 
+pico_generate_pio_header(debugomatic ${CMAKE_CURRENT_LIST_DIR}/piosrc/parallelio.pio)
+
 pico_set_program_name(debugomatic "debugomatic")
 pico_set_program_version(debugomatic "0.1")
 

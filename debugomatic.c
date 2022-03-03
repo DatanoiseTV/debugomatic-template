@@ -6,8 +6,11 @@
 #include "hardware/pio.h"
 #include "hardware/timer.h"
 #include "hardware/watchdog.h"
+#include "hardware/sync.h"
+#include "hardware/irq.h"
 #include "hardware/clocks.h"
 #include "hardware_config.h"
+#include "parallelio.pio.h"
 
 // SPI Defines
 // We are going to use SPI 0, and allocate it to the following GPIO pins
@@ -30,11 +33,55 @@ int64_t alarm_callback(alarm_id_t id, void *user_data) {
     return 0;
 }
 
+void on_parallelio()
+{
+  if (pio0_hw->irq & 1)
+  {
+    pio0_hw->irq = 1;
+    // PIO0 IRQ0 fired
+  }
+  else if (pio0_hw->irq & 2)
+  {
+    pio0_hw->irq = 2;
 
+    // PIO0 IRQ1 fired
+  }
+
+  uint32_t interrupts = save_and_disable_interrupts();
+
+  PIO pio = pio0;
+  uint32_t c = parallelio_program_getc(pio, 0);
+  //printf("%04x\n", c);
+
+  uint8_t addr = c & 0xFF;
+  uint8_t data = (c >> 8) & 0xFF;
+
+  printf("%02x %02x\n", addr, data);
+
+  restore_interrupts(interrupts);
+}
+
+
+int rxtask(){
+    PIO pio = pio0;
+  uint offset = pio_add_program(pio, &parallelio_program);
+  uint sm = pio_claim_unused_sm(pio, true);
+  parallelio_program_init(pio, sm, offset, 0);
+
+  //pio_set_irq0_source_enabled(pio, pis_interrupt0, true);
+
+  irq_add_shared_handler(PIO0_IRQ_0, on_parallelio, PICO_SHARED_IRQ_HANDLER_DEFAULT_ORDER_PRIORITY);
+
+  irq_set_enabled(PIO0_IRQ_0, true);
+
+  pio0_hw->inte0 = PIO_IRQ0_INTE_SM0_BITS | PIO_IRQ0_INTE_SM1_BITS;
+
+}
 
 int main()
 {
     stdio_init_all();
+    rxtask();
 
     // SPI initialisation. This example will use SPI at 1MHz.
     /*
