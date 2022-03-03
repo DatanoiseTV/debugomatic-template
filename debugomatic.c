@@ -7,6 +7,7 @@
 #include "hardware/timer.h"
 #include "hardware/watchdog.h"
 #include "hardware/clocks.h"
+#include "hardware_config.h"
 
 // SPI Defines
 // We are going to use SPI 0, and allocate it to the following GPIO pins
@@ -36,29 +37,41 @@ int main()
     stdio_init_all();
 
     // SPI initialisation. This example will use SPI at 1MHz.
+    /*
     spi_init(SPI_PORT, 1000*1000);
     gpio_set_function(PIN_MISO, GPIO_FUNC_SPI);
     gpio_set_function(PIN_CS,   GPIO_FUNC_SIO);
     gpio_set_function(PIN_SCK,  GPIO_FUNC_SPI);
     gpio_set_function(PIN_MOSI, GPIO_FUNC_SPI);
-    
+
     // Chip select is active-low, so we'll initialise it to a driven-high state
     gpio_set_dir(PIN_CS, GPIO_OUT);
     gpio_put(PIN_CS, 1);
-    
+
+    */
 
     // I2C Initialisation. Using it at 400Khz.
+    /*
     i2c_init(I2C_PORT, 400*1000);
     
     gpio_set_function(I2C_SDA, GPIO_FUNC_I2C);
     gpio_set_function(I2C_SCL, GPIO_FUNC_I2C);
     gpio_pull_up(I2C_SDA);
     gpio_pull_up(I2C_SCL);
+    */
 
     // Timer example code - This example fires off the callback after 2000ms
-    add_alarm_in_ms(2000, alarm_callback, NULL, false);
+    // add_alarm_in_ms(2000, alarm_callback, NULL, false);
 
-    puts("Hello, world!");
+    // Set all 3 8-bit level shifters to push-pull mode (set to 0 for tristate)
+    for(int pin=PIN_OE0; pin <= PIN_OE3; pin++) {
+        gpio_init(pin);
+        gpio_set_dir(pin, GPIO_OUT);
+        gpio_put(pin, 1);
+    }
 
-    return 0;
+    while(1){
+        printf("%d\n", gpio_get(PIN_GPIO_MIN));
+        sleep_ms(100);
+    }
 }
